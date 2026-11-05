@@ -1,0 +1,13 @@
+{
+  "version": "2.2.0",
+  "generated_at": "2026-11-04T14:16:17.487Z",
+  "hashes": {
+    "public/datakey-offline.html": "7ab6ce9a92d61ab45255988a957fbf6a6a42c3a9720ffac593455d58a21dadc7",
+    "public/manifest.json": "c36fe94beff97d793853aaf90970d539024828f6145b129eedb0555147384ea2",
+    "public/icon-192.svg": "d0959690b5046c22051e13eafff9d3d968b6551b06a2b914a24138ce1b82a2cd",
+    "public/icon-512.svg": "f24ba5f9ea11b8ba39fab1bcecb0b07248eb34deb09d6fbf24f3de8dedf4cdbf",
+    "config/datakey.config.ts": "ea44f692ab832d28516aaf9a747d5b63a084ea7b97e25af7c88aecb110ab1ee8",
+    "supabase/migrations/20261104000000_datakey_schema.sql": "75b326a02994bee895434d665745cdb5712382a32835c85325ca5e07e28d658e",
+    "package.json": "671b6ad622bf274e13ddf3fa807d0d5bc49118a06c95602eb94dadd0735b1309"
+  }
+}

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="36" fill="#080808" />
+  <rect x="6" y="6" width="180" height="180" rx="30" fill="none" stroke="#cdcbca" stroke-width="2" stroke-opacity="0.3" />
+  <!-- Keyhole / Shield Icon in Chrome Silver -->
+  <path d="M96 44 C80 44 68 56 68 72 C68 83 74 92 83 97 L83 132 C83 136 86 140 90 140 L102 140 C106 140 109 136 109 132 L109 97 C118 92 124 83 124 72 C124 56 112 44 96 44 Z" fill="#cdcbca" />
+  <circle cx="96" cy="72" r="10" fill="#080808" />
+</svg>
+

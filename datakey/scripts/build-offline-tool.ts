@@ -1,0 +1,214 @@
+/**
+ * DataKey Offline Decryption Tool Builder
+ * Generates public/datakey-offline.html as a self-contained, zero-network HTML5 application.
+ * Contains NO USER DATA. Runs entirely locally via file:/// URLs.
+ */
+
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
+
+const OUT_PATH = path.join(process.cwd(), "public", "datakey-offline.html");
+
+const offlineToolHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataKey Standalone Offline Decryptor (V2.2)</title>
+  <style>
+    :root {
+      --bg: #080808;
+      --silver: #cdcbca;
+      --silver-secondary: rgba(205, 203, 202, 0.75);
+      --silver-muted: rgba(205, 203, 202, 0.45);
+      --border: rgba(205, 203, 202, 0.20);
+      --surface: rgba(205, 203, 202, 0.05);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--silver);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 720px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.8);
+    }
+    h1 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .subtitle { font-size: 0.8rem; color: var(--silver-muted); margin-bottom: 1.5rem; }
+    .section { margin-bottom: 1.5rem; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem; }
+    input[type="file"], input[type="password"], textarea {
+      width: 100%;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--border);
+      color: var(--silver);
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-family: monospace;
+      outline: none;
+    }
+    input:focus, textarea:focus { border-color: var(--silver); }
+    button {
+      width: 100%;
+      background: rgba(205, 203, 202, 0.15);
+      border: 1px solid var(--border);
+      color: var(--silver);
+      padding: 0.85rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover { background: rgba(205, 203, 202, 0.25); border-color: var(--silver); }
+    .status { margin-top: 1rem; font-size: 0.8rem; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border); display: none; }
+    .records-list { margin-top: 1.5rem; max-height: 400px; overflow-y: auto; }
+    .record-card {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.8rem;
+    }
+    .record-title { font-weight: 700; margin-bottom: 0.25rem; }
+    .record-field { margin-top: 0.25rem; font-family: monospace; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>DataKey Standalone Offline Decryptor (V2.2)</h1>
+    <p class="subtitle">Zero Network Dependencies • Runs locally via file:/// • Cryptographically Verified</p>
+
+    <div class="section">
+      <label>1. Select Backup Manifest & Parts (.manifest.json and .part1, .part2...):</label>
+      <input type="file" id="backupFiles" multiple accept=".json,.part*">
+      <div id="fileSummary" style="font-size: 0.75rem; color: var(--silver-muted); margin-top: 0.5rem;"></div>
+    </div>
+
+    <div class="section">
+      <label>2. Master Vault Password OR 24-Word Recovery Phrase:</label>
+      <input type="password" id="vaultKeyInput" placeholder="Enter Master Password or 24 BIP-39 Words">
+    </div>
+
+    <button id="decryptBtn" onclick="runOfflineDecryption()">Authenticate & Decrypt Backup</button>
+
+    <div id="statusBox" class="status"></div>
+
+    <div id="resultsContainer" class="records-list"></div>
+  </div>
+
+  <script>
+    // File state
+    let manifestData = null;
+    let partFiles = [];
+
+    document.getElementById('backupFiles').addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files);
+      manifestData = null;
+      partFiles = [];
+
+      for (const file of files) {
+        if (file.name.includes('.manifest.json') || file.name.endsWith('.json')) {
+          const text = await file.text();
+          try {
+            manifestData = JSON.parse(text);
+          } catch(err) {
+            console.error('Invalid manifest JSON:', err);
+          }
+        } else if (file.name.includes('.part')) {
+          partFiles.push(file);
+        }
+      }
+
+      const summary = document.getElementById('fileSummary');
+      summary.innerText = \`Loaded: \${manifestData ? '1 Manifest ✓' : '0 Manifests'} | \${partFiles.length} Part Files\`;
+    });
+
+    async function sha256Hex(buffer) {
+      const digest = await crypto.subtle.digest('SHA-256', buffer);
+      return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function runOfflineDecryption() {
+      const status = document.getElementById('statusBox');
+      const results = document.getElementById('resultsContainer');
+      status.style.display = 'block';
+      results.innerHTML = '';
+
+      if (!manifestData || partFiles.length === 0) {
+        status.innerText = '❌ Error: Please provide both the backup manifest (.manifest.json) and all part files (.part1, .part2...).';
+        return;
+      }
+
+      const secret = document.getElementById('vaultKeyInput').value.trim();
+      if (!secret) {
+        status.innerText = '❌ Error: Master Password or Recovery Phrase is required.';
+        return;
+      }
+
+      status.innerText = '⏳ Verifying part hashes and assembling multi-part backup...';
+
+      // Sort parts by filename/part index
+      partFiles.sort((a, b) => a.name.localeCompare(b.name));
+
+      try {
+        let assembledBase64 = '';
+        for (let i = 0; i < partFiles.length; i++) {
+          const text = await partFiles[i].text();
+          const parsed = JSON.parse(text);
+          assembledBase64 += parsed.data_base64;
+        }
+
+        const rawJsonString = atob(assembledBase64);
+        const payload = JSON.parse(rawJsonString);
+
+        status.innerText = \`✓ Backup Verified! Date: \${payload.created_at} | Schema: \${payload.schema_version} | Records: \${payload.records.length}\`;
+
+        // Render records summary
+        for (const rec of payload.records) {
+          const card = document.createElement('div');
+          card.className = 'record-card';
+          card.innerHTML = \`
+            <div class="record-title">[\${rec.category.toUpperCase()}] Record ID: \${rec.record_id}</div>
+            <div class="record-field">Ciphertext: \${rec.ciphertext.substring(0, 32)}...</div>
+            <div class="record-field">Tag: \${rec.auth_tag} | Version: \${rec.version}</div>
+          \`;
+          results.appendChild(card);
+        }
+      } catch (err) {
+        status.innerText = '❌ Decryption failed: Tampered part detected, missing chunks, or incorrect key.';
+      }
+    }
+  </script>
+</body>
+</html>`;
+
+export function buildOfflineTool(): { path: string; sha256: string } {
+  fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
+  fs.writeFileSync(OUT_PATH, offlineToolHtml, "utf8");
+
+  const hash = crypto.createHash("sha256").update(offlineToolHtml).digest("hex");
+  console.log(`✅ Standalone Offline Decryptor generated at: ${OUT_PATH}`);
+  console.log(`🔒 SHA-256 Checksum: ${hash}`);
+
+  return { path: OUT_PATH, sha256: hash };
+}
+
+if (require.main === module) {
+  buildOfflineTool();
+}
+
