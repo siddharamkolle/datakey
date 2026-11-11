@@ -1,0 +1,47 @@
+{
+  "name": "datakey",
+  "version": "2.2.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "tsx tests/all-tests.ts",
+    "test:crypto": "tsx src/lib/crypto/__tests__/crypto.test.ts",
+    "test:all": "tsx tests/all-tests.ts",
+    "build:offline": "tsx scripts/build-offline-tool.ts",
+    "manifest:release": "tsx scripts/generate-release-manifest.ts",
+    "verify:release": "tsx scripts/verify-release.ts",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1161.0",
+    "@aws-sdk/s3-request-presigner": "^3.1161.0",
+    "@noble/hashes": "^2.4.0",
+    "@scure/bip39": "^2.4.0",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
+    "@upstash/ratelimit": "^2.2.0",
+    "@upstash/redis": "^1.41.0",
+    "hash-wasm": "^4.12.0",
+    "lucide-react": "^1.68.0",
+    "next": "16.4.5",
+    "postgres": "^4.1.0",
+    "qrcode": "^1.5.4",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.5",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  }
+}
